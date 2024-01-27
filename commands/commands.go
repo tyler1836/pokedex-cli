@@ -28,7 +28,7 @@ func commandExit() error {
 	return nil
 }
 
-func startPokedex() {
+func StartPokedex() {
 	commands = map[string]commandline{
 		"help": commandline{
 			name: "help",

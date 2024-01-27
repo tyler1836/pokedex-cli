@@ -8,6 +8,6 @@ import (
 
 func main() {
 
-	pokedex.startPokedex()
+	pokedex.StartPokedex()
 	
 }
