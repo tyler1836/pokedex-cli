@@ -19,12 +19,14 @@ type commandline struct {
 type maps struct {
 	Count    int    `json:"count"`
 	Next     string `json:"next"`
-	Previous any    `json:"previous"`
+	Previous string    `json:"previous"`
 	Results  []struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
-	} `json:"results"`
+		} `json:"results"`
 }
+
+var url string = "https://pokeapi.co/api/v2/location"
 var commands map[string]commandline
 
 func commandHelp() error {
@@ -40,8 +42,37 @@ func commandExit() error {
 	return nil
 }
 func commandMap() error {
+	// pagination is working however value of url needs to be updated somehow globally. As is when mapb is called after map the next 20 show and the prev 20 show when map is called after mapb
 	locationData := maps{}
-	resp, err := http.Get("https://pokeapi.co/api/v2/location")
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Unfortunately there was an error with the map command")
+		return nil
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	
+	resp.Body.Close()
+	
+	if resp.StatusCode > 299 {
+		fmt.Printf("Something happened on our end %v", resp.StatusCode)
+	}
+	
+	maperr := json.Unmarshal(body, &locationData)
+	if maperr != nil {
+		fmt.Printf("Error unmarshaling location data")
+	}
+	
+	
+	for _, mapName := range locationData.Results {
+		fmt.Printf("%s\n", mapName.Name)
+	}
+	url = locationData.Next
+	return nil
+}
+func commandMapb() error {
+	locationData := maps{}
+	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Unfortunately there was an error with the map command")
 		return nil
@@ -54,26 +85,18 @@ func commandMap() error {
 	if resp.StatusCode > 299 {
 		fmt.Printf("Something happened on our end %v", resp.StatusCode)
 	}
-
+	
 	maperr := json.Unmarshal(body, &locationData)
 	if maperr != nil {
 		fmt.Printf("Error unmarshaling location data")
 	}
-
-	resp2, err2 := http.Get(locationData.Next)
-	if err2 != nil {
-		fmt.Println("Error fetching data")
+	if locationData.Previous != "" {
+		url = locationData.Previous
 	}
 
-	body2, err := io.ReadAll(resp2.Body)
-	resp2.Body.Close()
-
-
-	fmt.Printf("%s", body2)
-
-	// for _, mapName := range locationData.Results {
-	// 	fmt.Printf("%s\n", mapName.Name)
-	// }
+	for _, mapName := range locationData.Results {
+			fmt.Printf("%s\n", mapName.Name)
+	}
 	return nil
 }
 
@@ -94,6 +117,11 @@ func StartPokedex() {
 			description: "Display locations from the Pokemon World",
 			callback: commandMap,
 		},
+		"mapb": commandline{
+			name: "mapb",
+			description: "Display previous locations from the Pokemon World",
+			callback: commandMapb,
+		},
 	}
 
 	reader := bufio.NewReader(os.Stdin) 
@@ -110,6 +138,8 @@ func StartPokedex() {
 				commands["exit"].callback() 
 			case "map":
 				commands["map"].callback()
+			case "mapb":
+				commands["mapb"].callback()
 		}
 	}
 }
