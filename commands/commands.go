@@ -26,7 +26,8 @@ type maps struct {
 		} `json:"results"`
 }
 
-var url string = "https://pokeapi.co/api/v2/location"
+var urlNext string = "https://pokeapi.co/api/v2/location"
+var urlPrev string = "https://pokeapi.co/api/v2/location"
 var commands map[string]commandline
 
 func commandHelp() error {
@@ -44,7 +45,7 @@ func commandExit() error {
 func commandMap() error {
 	// pagination is working however value of url needs to be updated somehow globally. As is when mapb is called after map the next 20 show and the prev 20 show when map is called after mapb
 	locationData := maps{}
-	resp, err := http.Get(url)
+	resp, err := http.Get(urlNext)
 	if err != nil {
 		fmt.Println("Unfortunately there was an error with the map command")
 		return nil
@@ -67,12 +68,13 @@ func commandMap() error {
 	for _, mapName := range locationData.Results {
 		fmt.Printf("%s\n", mapName.Name)
 	}
-	url = locationData.Next
+	urlNext = locationData.Next
+	urlPrev = locationData.Previous
 	return nil
 }
 func commandMapb() error {
 	locationData := maps{}
-	resp, err := http.Get(url)
+	resp, err := http.Get(urlPrev)
 	if err != nil {
 		fmt.Println("Unfortunately there was an error with the map command")
 		return nil
@@ -91,7 +93,8 @@ func commandMapb() error {
 		fmt.Printf("Error unmarshaling location data")
 	}
 	if locationData.Previous != "" {
-		url = locationData.Previous
+		urlNext = locationData.Next
+		urlPrev = locationData.Previous
 	}
 
 	for _, mapName := range locationData.Results {
